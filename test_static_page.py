@@ -18,6 +18,8 @@ def test_taskflow_page_uses_todo_api_and_mobile_layout() -> None:
     assert 'id="auth-form"' in page
     assert 'authenticate("/login")' in page
     assert 'authenticate("/signup")' in page
+    assert "authForm.reportValidity()" in page
+    assert "errorMessageFromDetail" in page
     assert 'localStorage.setItem(TOKEN_KEY, token)' in page
     assert 'Authorization: `Bearer ${token}`' in page
     assert 'id="logout-button"' in page

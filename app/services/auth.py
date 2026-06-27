@@ -20,6 +20,7 @@ from app.models.user import User
 
 bearer_scheme = HTTPBearer(auto_error=False)
 token_lifetime_seconds = 60 * 60
+_ephemeral_jwt_secret = secrets.token_urlsafe(48)
 
 
 def normalize_email(email: str) -> str:
@@ -72,6 +73,8 @@ def base64url_decode(data: str) -> bytes:
 
 def jwt_secret() -> bytes:
     secret = os.getenv("JWT_SECRET")
+    if not secret and os.getenv("RENDER", "").lower() == "true":
+        return _ephemeral_jwt_secret.encode()
     if not secret:
         raise RuntimeError("JWT_SECRET 환경 변수가 필요합니다")
     return secret.encode()

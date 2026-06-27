@@ -187,9 +187,21 @@ def test_password_verification_rejects_invalid_hash_formats() -> None:
 
 def test_jwt_secret_is_required(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("JWT_SECRET", raising=False)
+    monkeypatch.delenv("RENDER", raising=False)
 
     with pytest.raises(RuntimeError):
         auth_service.create_access_token(user_id=1)
+
+
+def test_render_uses_ephemeral_jwt_secret_when_env_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("JWT_SECRET", raising=False)
+    monkeypatch.setenv("RENDER", "true")
+
+    token = auth_service.create_access_token(user_id=1)
+
+    assert token.count(".") == 2
 
 
 def test_decode_access_token_rejects_bad_signature() -> None:

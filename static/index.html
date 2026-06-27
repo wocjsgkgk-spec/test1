@@ -259,7 +259,16 @@
         if (message) showToast(message, true);
       }
 
+      function errorMessageFromDetail(detail) {
+        if (Array.isArray(detail)) {
+          return detail.map((item) => item.msg || item.message || "입력값을 확인해 주세요.").join(" ");
+        }
+        if (typeof detail === "string") return detail;
+        return "요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+      }
+
       async function authenticate(path) {
+        if (!authForm.reportValidity()) return;
         const email = authEmail.value.trim();
         const password = authPassword.value;
         if (!email || !password) return;
@@ -269,7 +278,7 @@
           body: JSON.stringify({ email, password }),
         });
         const body = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(body.detail || "인증 요청을 처리하지 못했습니다.");
+        if (!response.ok) throw new Error(errorMessageFromDetail(body.detail));
         token = body.access_token;
         localStorage.setItem(TOKEN_KEY, token);
         showAuthenticatedWorkspace(email);
@@ -282,7 +291,7 @@
         const response = await fetch(path, { ...options, headers });
         if (!response.ok) {
           let message = "요청을 처리하지 못했습니다.";
-          try { message = (await response.json()).detail || message; } catch (_) { /* 응답 본문이 없는 경우 기본 메시지를 사용한다. */ }
+          try { message = errorMessageFromDetail((await response.json()).detail); } catch (_) { /* 응답 본문이 없는 경우 기본 메시지를 사용한다. */ }
           if (response.status === 401) {
             clearAuthentication("로그인 세션이 만료되었어요. 다시 로그인해 주세요.");
             message = "로그인이 필요합니다.";
