@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#087e7f" />
+    <title>TaskFlow | 오늘의 할 일</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #12343b;
+        --muted: #5d7476;
+        --teal: #087e7f;
+        --teal-dark: #04595d;
+        --aqua: #b9f2e8;
+        --sand: #fff6df;
+        --coral: #ff7466;
+        --surface: rgba(255, 255, 255, 0.74);
+        --line: rgba(8, 126, 127, 0.16);
+        --shadow: 0 18px 45px rgba(2, 67, 69, 0.13);
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        min-width: 320px;
+        min-height: 100vh;
+        margin: 0;
+        color: var(--ink);
+        font-family: "Manrope", sans-serif;
+        background:
+          radial-gradient(circle at 8% 8%, rgba(118, 225, 206, 0.75), transparent 30rem),
+          radial-gradient(circle at 88% 80%, rgba(255, 201, 118, 0.42), transparent 28rem),
+          linear-gradient(135deg, #e4fcf5 0%, #f4f8db 48%, #fdf1d4 100%);
+      }
+
+      button, input { font: inherit; }
+      button { cursor: pointer; }
+
+      .app-shell { width: min(100% - 40px, 1040px); margin: 0 auto; padding: 28px 0 56px; }
+
+      .topbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+      .brand { display: flex; align-items: center; gap: 10px; font-size: 1.1rem; font-weight: 800; letter-spacing: -0.04em; }
+      .brand-mark { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 11px 11px 11px 3px; color: white; background: var(--teal-dark); box-shadow: 4px 4px 0 var(--coral); }
+      .ai-button { display: inline-flex; align-items: center; gap: 9px; min-height: 44px; padding: 0 15px; border: 0; border-radius: 999px; color: white; font-weight: 800; background: var(--teal); box-shadow: 0 10px 22px rgba(8, 126, 127, 0.25); transition: transform 180ms ease, background 180ms ease; }
+      .ai-button:hover { transform: translateY(-2px); background: var(--teal-dark); }
+      .ai-button:disabled { cursor: wait; opacity: 0.7; transform: none; }
+      .auth-actions { display: flex; align-items: center; gap: 10px; }
+      .user-email { color: var(--muted); font-size: 0.78rem; font-weight: 700; }
+      .logout-button { min-height: 38px; padding: 0 13px; border: 1px solid var(--line); border-radius: 999px; color: var(--teal-dark); font-size: 0.78rem; font-weight: 800; background: rgba(255, 255, 255, 0.7); }
+      .logout-button:hover { color: white; background: var(--teal-dark); }
+
+      .hero { padding: 66px 0 35px; }
+      .eyebrow { margin: 0 0 10px; color: var(--teal-dark); font-size: 0.78rem; font-weight: 800; letter-spacing: 0.11em; text-transform: uppercase; }
+      h1 { max-width: 630px; margin: 0; font-family: "DM Serif Display", serif; font-size: clamp(2.6rem, 7vw, 5.5rem); font-weight: 400; line-height: 0.92; letter-spacing: -0.06em; }
+      h1 em { color: var(--teal); font-style: italic; }
+      .hero-copy { max-width: 470px; margin: 20px 0 0; color: var(--muted); font-size: 1rem; line-height: 1.75; }
+
+      .workspace { display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: 24px; align-items: start; }
+      .auth-card { width: min(100%, 460px); margin: 44px auto 0; padding: 28px; border: 1px solid rgba(255, 255, 255, 0.7); border-radius: 24px; background: var(--surface); box-shadow: var(--shadow); backdrop-filter: blur(14px); }
+      .auth-card h2 { margin: 0; font-family: "DM Serif Display", serif; font-size: 2rem; font-weight: 400; }
+      .auth-card p { margin: 8px 0 20px; color: var(--muted); font-size: 0.87rem; line-height: 1.6; }
+      .auth-form { display: grid; gap: 11px; }
+      .auth-form label { color: var(--teal-dark); font-size: 0.75rem; font-weight: 800; }
+      .auth-form .field { border-color: var(--line); }
+      .auth-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
+      .auth-submit, .auth-signup { min-height: 46px; border: 0; border-radius: 12px; font-weight: 800; }
+      .auth-submit { color: white; background: var(--teal); }
+      .auth-signup { color: var(--teal-dark); background: var(--aqua); }
+      .main-card, .side-card { border: 1px solid rgba(255, 255, 255, 0.6); background: var(--surface); box-shadow: var(--shadow); backdrop-filter: blur(14px); }
+      .main-card { overflow: hidden; border-radius: 26px; }
+      .side-card { padding: 23px; border-radius: 22px; }
+
+      .add-form { display: grid; grid-template-columns: minmax(0, 1fr) 150px auto; gap: 10px; padding: 18px; background: rgba(1, 87, 89, 0.97); }
+      .field { width: 100%; min-width: 0; height: 46px; padding: 0 13px; border: 1px solid transparent; border-radius: 12px; color: var(--ink); outline: 0; background: white; }
+      .field:focus { border-color: var(--aqua); box-shadow: 0 0 0 3px rgba(185, 242, 232, 0.3); }
+      .add-button { min-height: 46px; padding: 0 18px; border: 0; border-radius: 12px; color: var(--teal-dark); font-weight: 800; background: var(--aqua); transition: transform 160ms ease; }
+      .add-button:hover { transform: translateY(-2px); }
+
+      .list-header { display: flex; justify-content: space-between; align-items: center; padding: 25px 25px 14px; }
+      .list-header h2, .side-card h2 { margin: 0; font-size: 0.9rem; font-weight: 800; letter-spacing: -0.02em; }
+      .count { color: var(--teal-dark); font-size: 0.76rem; font-weight: 800; }
+      .todo-list { min-height: 230px; margin: 0; padding: 0 13px 13px; list-style: none; }
+      .todo-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 13px; padding: 14px 12px; border-radius: 15px; animation: item-in 360ms cubic-bezier(.2,.9,.2,1) both; transition: opacity 320ms ease, filter 320ms ease, transform 320ms ease, background 320ms ease; }
+      .todo-item + .todo-item { border-top: 1px solid var(--line); border-radius: 0; }
+      .todo-item.is-done { opacity: 0.54; filter: saturate(0.62); background: rgba(235, 246, 240, 0.58); animation: complete-fade 460ms cubic-bezier(.2,.8,.2,1) both; }
+      .todo-item.is-removing { animation: item-out 240ms ease both; }
+      .check { position: relative; display: grid; width: 23px; height: 23px; flex: 0 0 auto; place-items: center; border: 2px solid var(--teal); border-radius: 50%; color: white; background: transparent; transition: transform 190ms ease, background 190ms ease; }
+      .check:hover { transform: scale(1.1); }
+      .is-done .check { background: var(--teal); animation: check-pop 330ms ease; }
+      .check svg { width: 14px; stroke-dasharray: 22; stroke-dashoffset: 22; transition: stroke-dashoffset 230ms ease 100ms; }
+      .is-done .check svg { stroke-dashoffset: 0; }
+      .todo-title { overflow: hidden; margin: 0 0 4px; font-weight: 700; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; transition: color 180ms ease, text-decoration-color 180ms ease; }
+      .is-done .todo-title { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 2px; text-decoration-color: var(--coral); }
+      .due { color: var(--muted); font-size: 0.76rem; }
+      .due.is-late { color: #cf4235; font-weight: 800; }
+      .delete { width: 32px; height: 32px; border: 0; border-radius: 10px; color: var(--muted); background: transparent; transition: color 160ms ease, background 160ms ease; }
+      .delete:hover { color: #b6382e; background: #ffe2dc; }
+      .empty { display: grid; min-height: 230px; place-items: center; padding: 25px; color: var(--muted); text-align: center; line-height: 1.7; }
+      .empty-mark { display: grid; width: 52px; height: 52px; margin: 0 auto 12px; place-items: center; border-radius: 17px 17px 17px 4px; color: var(--teal-dark); font-size: 1.3rem; background: var(--aqua); box-shadow: 4px 4px 0 rgba(255, 116, 102, 0.72); }
+      .empty strong { display: block; color: var(--ink); font-size: 0.95rem; }
+      .empty button { margin-top: 13px; border: 0; border-bottom: 2px solid var(--coral); color: var(--teal-dark); font-size: 0.8rem; font-weight: 800; background: transparent; }
+
+      .progress-ring { display: grid; width: 112px; height: 112px; margin: 20px auto 17px; place-items: center; border-radius: 50%; background: conic-gradient(var(--teal) calc(var(--progress) * 1%), rgba(8, 126, 127, 0.12) 0); }
+      .progress-ring::before { position: absolute; width: 88px; height: 88px; border-radius: inherit; content: ""; background: #fafff7; }
+      .progress-number { z-index: 1; font-family: "DM Serif Display", serif; font-size: 1.9rem; }
+      .progress-copy { margin: 0; color: var(--muted); font-size: 0.78rem; line-height: 1.6; text-align: center; }
+      .recommendation { min-height: 112px; margin-top: 22px; padding: 14px; border: 1px solid rgba(255, 116, 102, 0.18); border-radius: 16px; color: var(--teal-dark); background: linear-gradient(140deg, #fff8e6, #fff0d1); font-size: 0.8rem; line-height: 1.55; }
+      .recommendation-heading { display: flex; align-items: center; gap: 7px; margin: 0 0 10px; color: var(--ink); font-weight: 800; }
+      .recommendation-heading span { display: grid; width: 20px; height: 20px; place-items: center; border-radius: 7px; color: white; font-size: 0.7rem; background: var(--coral); }
+      .recommendation-card { padding: 10px; border-radius: 11px; background: rgba(255, 255, 255, 0.68); box-shadow: 0 5px 13px rgba(139, 102, 43, 0.08); animation: item-in 300ms ease both; }
+      .recommendation-card + .recommendation-card { margin-top: 7px; }
+      .recommendation-priority { margin: 0 0 2px; color: var(--coral); font-size: 0.67rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+      .recommendation-title { margin: 0; color: var(--ink); font-weight: 800; }
+      .recommendation-reason { margin: 4px 0 0; color: var(--muted); font-size: 0.73rem; }
+
+      .toast { position: fixed; right: 20px; bottom: 20px; z-index: 5; max-width: min(340px, calc(100% - 40px)); padding: 13px 16px; border-radius: 13px; color: white; font-size: 0.86rem; font-weight: 700; background: var(--ink); box-shadow: var(--shadow); opacity: 0; pointer-events: none; transform: translateY(12px); transition: opacity 180ms ease, transform 180ms ease; }
+      .toast.show { opacity: 1; transform: translateY(0); }
+      .toast.error { background: #9d332b; }
+
+      @keyframes item-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes item-out { to { opacity: 0; transform: translateX(18px) scale(0.96); } }
+      @keyframes check-pop { 50% { transform: scale(1.25); } }
+      @keyframes complete-fade { 0% { opacity: 1; filter: saturate(1); transform: translateY(0); } 55% { opacity: 0.42; transform: translateY(2px); } 100% { opacity: 0.54; filter: saturate(0.62); transform: translateY(0); } }
+
+      @media (max-width: 760px) {
+        .app-shell { width: min(100% - 28px, 620px); padding-top: 18px; }
+        .hero { padding: 48px 0 28px; }
+        .workspace { grid-template-columns: 1fr; }
+        .side-card { display: grid; grid-template-columns: auto 1fr; gap: 0 18px; align-items: center; }
+        .side-card h2 { grid-column: 1 / -1; }
+        .progress-ring { grid-row: 2; margin: 17px 0 0; }
+        .progress-copy { grid-row: 2; text-align: left; }
+        .recommendation { grid-column: 1 / -1; }
+      }
+
+      @media (max-width: 520px) {
+        .topbar { align-items: flex-start; }
+        .ai-button { padding: 0 12px; font-size: 0.78rem; }
+        .add-form { grid-template-columns: 1fr auto; }
+        .due-input { grid-column: 1 / -1; }
+        .add-button { grid-column: 2; grid-row: 2; }
+        .todo-item { gap: 10px; padding: 14px 8px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div class="brand"><span class="brand-mark">✓</span>TaskFlow</div>
+        <div class="auth-actions">
+          <span class="user-email" id="user-email" hidden></span>
+          <button class="logout-button" id="logout-button" type="button" hidden>로그아웃</button>
+          <button class="ai-button" id="ai-button" type="button" hidden><span>✦</span>오늘 뭐부터?</button>
+        </div>
+      </header>
+
+      <section class="hero" aria-labelledby="page-title">
+        <p class="eyebrow" id="today-label">오늘의 흐름</p>
+        <h1 id="page-title">작은 시작이<br /><em>큰 흐름</em>을 만들어요.</h1>
+        <p class="hero-copy">중요한 일을 먼저 가볍게 꺼내 놓으세요. TaskFlow가 오늘의 리듬을 함께 정리합니다.</p>
+      </section>
+
+      <section class="auth-card" id="auth-panel" aria-labelledby="auth-title">
+        <h2 id="auth-title">TaskFlow에 로그인</h2>
+        <p>계정으로 로그인하거나 새로 가입해 오늘의 할 일을 관리하세요.</p>
+        <form class="auth-form" id="auth-form">
+          <label for="auth-email">이메일</label>
+          <input class="field" id="auth-email" name="email" type="email" autocomplete="email" required />
+          <label for="auth-password">비밀번호</label>
+          <input class="field" id="auth-password" name="password" type="password" autocomplete="current-password" minlength="8" required />
+          <div class="auth-buttons">
+            <button class="auth-submit" type="submit">로그인</button>
+            <button class="auth-signup" id="signup-button" type="button">회원가입</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="workspace" id="workspace" aria-label="할 일 관리" hidden>
+        <div class="main-card">
+          <form class="add-form" id="todo-form">
+            <input class="field" id="todo-title" name="title" maxlength="200" placeholder="지금 해야 할 일을 적어보세요" required />
+            <input class="field due-input" id="todo-due" name="due" type="date" aria-label="마감일" />
+            <button class="add-button" type="submit">추가</button>
+          </form>
+          <div class="list-header"><h2>오늘의 할 일</h2><span class="count" id="todo-count">0개</span></div>
+          <ul class="todo-list" id="todo-list" aria-live="polite"></ul>
+        </div>
+
+        <aside class="side-card" aria-label="오늘의 진행률">
+          <h2>오늘의 추진력</h2>
+          <div class="progress-ring" id="progress-ring" style="--progress: 0"><span class="progress-number" id="progress-number">0%</span></div>
+          <p class="progress-copy" id="progress-copy">첫 번째 할 일을 추가해<br />오늘의 흐름을 시작하세요.</p>
+          <div class="recommendation" id="recommendation"><p class="recommendation-heading"><span>✦</span>AI 추천</p>버튼을 눌러 가장 먼저 처리할 일을 받아보세요.</div>
+        </aside>
+      </section>
+    </main>
+    <div class="toast" id="toast" role="status"></div>
+
+    <script>
+      const API_ROOT = "/todos";
+      const TOKEN_KEY = "taskflow_access_token";
+      let token = localStorage.getItem(TOKEN_KEY);
+      const authPanel = document.querySelector("#auth-panel");
+      const authForm = document.querySelector("#auth-form");
+      const authEmail = document.querySelector("#auth-email");
+      const authPassword = document.querySelector("#auth-password");
+      const signupButton = document.querySelector("#signup-button");
+      const workspace = document.querySelector("#workspace");
+      const logoutButton = document.querySelector("#logout-button");
+      const userEmail = document.querySelector("#user-email");
+      const form = document.querySelector("#todo-form");
+      const titleInput = document.querySelector("#todo-title");
+      const dueInput = document.querySelector("#todo-due");
+      const list = document.querySelector("#todo-list");
+      const count = document.querySelector("#todo-count");
+      const progressRing = document.querySelector("#progress-ring");
+      const progressNumber = document.querySelector("#progress-number");
+      const progressCopy = document.querySelector("#progress-copy");
+      const recommendation = document.querySelector("#recommendation");
+      const aiButton = document.querySelector("#ai-button");
+      const toast = document.querySelector("#toast");
+      let todos = [];
+      let toastTimer;
+
+      document.querySelector("#today-label").textContent = new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", weekday: "long" }).format(new Date());
+
+      function showToast(message, isError = false) {
+        toast.textContent = message;
+        toast.className = `toast show${isError ? " error" : ""}`;
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { toast.className = "toast"; }, 3500);
+      }
+
+      function showAuthenticatedWorkspace(email = "") {
+        authPanel.hidden = true;
+        workspace.hidden = false;
+        logoutButton.hidden = false;
+        aiButton.hidden = false;
+        userEmail.hidden = !email;
+        userEmail.textContent = email;
+      }
+
+      function clearAuthentication(message = "") {
+        token = null;
+        localStorage.removeItem(TOKEN_KEY);
+        todos = [];
+        authPanel.hidden = false;
+        workspace.hidden = true;
+        logoutButton.hidden = true;
+        aiButton.hidden = true;
+        userEmail.hidden = true;
+        authPassword.value = "";
+        if (message) showToast(message, true);
+      }
+
+      async function authenticate(path) {
+        const email = authEmail.value.trim();
+        const password = authPassword.value;
+        if (!email || !password) return;
+        const response = await fetch(path, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(body.detail || "인증 요청을 처리하지 못했습니다.");
+        token = body.access_token;
+        localStorage.setItem(TOKEN_KEY, token);
+        showAuthenticatedWorkspace(email);
+        await loadTodos();
+        showToast(path === "/signup" ? "가입 후 로그인했어요." : "로그인했어요.");
+      }
+
+      async function apiFetch(path, options = {}) {
+        const headers = { ...(options.body ? { "Content-Type": "application/json" } : {}), ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options.headers };
+        const response = await fetch(path, { ...options, headers });
+        if (!response.ok) {
+          let message = "요청을 처리하지 못했습니다.";
+          try { message = (await response.json()).detail || message; } catch (_) { /* 응답 본문이 없는 경우 기본 메시지를 사용한다. */ }
+          if (response.status === 401) {
+            clearAuthentication("로그인 세션이 만료되었어요. 다시 로그인해 주세요.");
+            message = "로그인이 필요합니다.";
+          }
+          throw new Error(message);
+        }
+        return response.status === 204 ? null : response.json();
+      }
+
+      function formatDue(due) {
+        if (!due) return "마감일 없음";
+        const date = new Date(`${due}T00:00:00`);
+        return new Intl.DateTimeFormat("ko-KR", { month: "short", day: "numeric", weekday: "short" }).format(date);
+      }
+
+      function isLate(todo) {
+        return !todo.done && todo.due && new Date(`${todo.due}T23:59:59`) < new Date();
+      }
+
+      function updateSummary() {
+        const done = todos.filter((todo) => todo.done).length;
+        const percent = todos.length ? Math.round((done / todos.length) * 100) : 0;
+        count.textContent = `${todos.length}개`;
+        progressRing.style.setProperty("--progress", percent);
+        progressNumber.textContent = `${percent}%`;
+        progressCopy.innerHTML = todos.length ? `<b>${done}개 완료</b> · ${todos.length - done}개 남음<br />한 번에 하나씩 끝내보세요.` : "첫 번째 할 일을 추가해<br />오늘의 흐름을 시작하세요.";
+      }
+
+      function renderTodos() {
+        list.innerHTML = "";
+        if (!todos.length) {
+          list.innerHTML = '<li class="empty"><div><div class="empty-mark">↗</div><strong>오늘의 첫 흐름을 시작해 볼까요?</strong><span>작은 한 가지를 적으면 충분해요.</span><br /><button type="button">첫 할 일 적기</button></div></li>';
+          list.querySelector("button").addEventListener("click", () => titleInput.focus());
+          updateSummary();
+          return;
+        }
+        todos.forEach((todo) => {
+          const item = document.createElement("li");
+          item.className = `todo-item${todo.done ? " is-done" : ""}`;
+          item.dataset.id = todo.id;
+          item.innerHTML = `
+            <button class="check" type="button" aria-label="${todo.done ? "미완료로 변경" : "완료 처리"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6" /></svg></button>
+            <div><p class="todo-title"></p><span class="due${isLate(todo) ? " is-late" : ""}">${isLate(todo) ? "기한 지남 · " : ""}${formatDue(todo.due)}</span></div>
+            <button class="delete" type="button" aria-label="${todo.title} 삭제">×</button>`;
+          item.querySelector(".todo-title").textContent = todo.title;
+          item.querySelector(".check").addEventListener("click", () => toggleTodo(todo.id));
+          item.querySelector(".delete").addEventListener("click", () => deleteTodo(todo.id, item));
+          list.append(item);
+        });
+        updateSummary();
+      }
+
+      async function loadTodos() {
+        try {
+          todos = await apiFetch(API_ROOT);
+          renderTodos();
+        } catch (error) {
+          list.innerHTML = '<li class="empty">할 일을 불러오지 못했어요.</li>';
+          showToast(error.message, true);
+        }
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const title = titleInput.value.trim();
+        if (!title) return;
+        try {
+          const todo = await apiFetch(API_ROOT, { method: "POST", body: JSON.stringify({ title, due: dueInput.value || null }) });
+          todos.unshift(todo);
+          renderTodos();
+          form.reset();
+          titleInput.focus();
+          showToast("새 할 일을 흐름에 추가했어요.");
+        } catch (error) { showToast(error.message, true); }
+      });
+
+      async function toggleTodo(id) {
+        try {
+          const updated = await apiFetch(`${API_ROOT}/${id}/toggle`, { method: "PATCH" });
+          todos = todos.map((todo) => todo.id === id ? updated : todo);
+          renderTodos();
+          showToast(updated.done ? "완료! 좋은 흐름이에요." : "할 일을 다시 열었어요.");
+        } catch (error) { showToast(error.message, true); }
+      }
+
+      async function deleteTodo(id, item) {
+        item.classList.add("is-removing");
+        try {
+          await apiFetch(`${API_ROOT}/${id}`, { method: "DELETE" });
+          todos = todos.filter((todo) => todo.id !== id);
+          setTimeout(renderTodos, 210);
+          showToast("할 일을 목록에서 지웠어요.");
+        } catch (error) {
+          item.classList.remove("is-removing");
+          showToast(error.message, true);
+        }
+      }
+
+      function showRecommendations(items) {
+        recommendation.innerHTML = "";
+        const heading = document.createElement("p");
+        heading.className = "recommendation-heading";
+        heading.innerHTML = "<span>✦</span>AI가 제안하는 순서";
+        recommendation.append(heading);
+
+        if (!items.length) {
+          recommendation.append("먼저 완료하지 않은 할 일을 추가해 주세요.");
+          return;
+        }
+        items.slice(0, 3).forEach((item) => {
+          const card = document.createElement("article");
+          card.className = "recommendation-card";
+          const priority = document.createElement("p");
+          priority.className = "recommendation-priority";
+          priority.textContent = `Priority ${item.priority}`;
+          const title = document.createElement("p");
+          title.className = "recommendation-title";
+          title.textContent = item.title;
+          const reason = document.createElement("p");
+          reason.className = "recommendation-reason";
+          reason.textContent = item.reason;
+          card.append(priority, title, reason);
+          recommendation.append(card);
+        });
+      }
+
+      aiButton.addEventListener("click", async () => {
+        aiButton.disabled = true;
+        aiButton.textContent = "추천 중...";
+        try {
+          const result = await apiFetch("/recommendations", { method: "POST" });
+          showRecommendations(result.recommendations || []);
+        } catch (error) { showToast(error.message, true); }
+        finally { aiButton.innerHTML = "<span>✦</span>오늘 뭐부터?"; aiButton.disabled = false; }
+      });
+
+      authForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        try { await authenticate("/login"); } catch (error) { showToast(error.message, true); }
+      });
+
+      signupButton.addEventListener("click", async () => {
+        try { await authenticate("/signup"); } catch (error) { showToast(error.message, true); }
+      });
+
+      logoutButton.addEventListener("click", () => {
+        clearAuthentication();
+        showToast("로그아웃했어요.");
+      });
+
+      if (token) showAuthenticatedWorkspace();
+    </script>
+  </body>
+</html>
