@@ -14,6 +14,17 @@ def test_database_url_prefers_database_url(monkeypatch) -> None:
     )
 
 
+def test_database_url_uses_psycopg_driver_for_plain_postgresql_url(monkeypatch) -> None:
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "postgresql://user:pass@db/taskflow?sslmode=require",
+    )
+
+    assert db.database_url_from_environment() == (
+        "postgresql+psycopg://user:pass@db/taskflow?sslmode=require"
+    )
+
+
 def test_configure_database_keeps_sqlite_path_compatibility(tmp_path: Path) -> None:
     database_path = tmp_path / "compatibility.db"
 

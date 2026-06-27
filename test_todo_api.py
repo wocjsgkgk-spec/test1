@@ -6,7 +6,9 @@ from types import SimpleNamespace
 import httpx
 import pytest
 from fastapi import HTTPException
+from sqlalchemy import event
 
+import app.db as db_module
 from app.models.recommendation import PriorityDecision
 from app.services.ai import (
     AIRecommendationError,
@@ -55,6 +57,13 @@ def signup(email: str = "user@example.com") -> str:
 
 def auth_headers(token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
+
+
+def test_health_returns_ok() -> None:
+    response = request("GET", "/health")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
 
 
 def test_signup_and_login_return_jwt() -> None:
@@ -311,6 +320,44 @@ def test_users_only_list_their_own_todos() -> None:
 
     assert [todo["title"] for todo in first_response.json()] == ["First user's todo"]
     assert [todo["title"] for todo in second_response.json()] == ["Second user's todo"]
+
+
+def test_listing_todos_uses_constant_number_of_queries() -> None:
+    token = signup("owner@example.com")
+    for title in ["First", "Second", "Third"]:
+        request(
+            "POST",
+            "/todos",
+            json={"title": title},
+            headers=auth_headers(token),
+        )
+
+    statements = []
+
+    def count_selects(
+        _connection,
+        _cursor,
+        statement,
+        _parameters,
+        _context,
+        _executemany,
+    ) -> None:
+        if statement.lstrip().upper().startswith("SELECT"):
+            statements.append(statement)
+
+    event.listen(db_module.engine, "before_cursor_execute", count_selects)
+    try:
+        response = request("GET", "/todos", headers=auth_headers(token))
+    finally:
+        event.remove(db_module.engine, "before_cursor_execute", count_selects)
+
+    assert response.status_code == 200
+    assert [todo["title"] for todo in response.json()] == [
+        "First",
+        "Second",
+        "Third",
+    ]
+    assert len(statements) == 2
 
 
 def test_created_todo_stores_current_user_id(isolated_database: Path) -> None:

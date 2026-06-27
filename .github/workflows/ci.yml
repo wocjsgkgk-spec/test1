@@ -1,0 +1,48 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+      - run: pytest
+
+      - name: Install Codex CLI
+        run: npm install -g @openai/codex
+
+      - name: Review changes with Codex
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch origin "${{ github.base_ref }}" --depth=1
+            REVIEW_TARGET=(--base "origin/${{ github.base_ref }}")
+          elif git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
+            REVIEW_TARGET=(--base "HEAD~1")
+          else
+            REVIEW_TARGET=(--commit "HEAD")
+          fi
+
+          codex exec review \
+            --ignore-user-config \
+            --ephemeral \
+            "${REVIEW_TARGET[@]}" \
+            "Review the changed code for merge-blocking bugs, security issues, data-loss risks, broken tests, and deployment regressions. If you find any critical or high severity issue that should block merge, include exactly 'BLOCKING_ISSUES: yes' in the final answer. If you do not find any such issue, include exactly 'BLOCKING_ISSUES: no'." \
+            | tee codex-review.txt
+
+          if grep -Eiq "BLOCKING_ISSUES:[[:space:]]*yes" codex-review.txt; then
+            exit 1
+          fi

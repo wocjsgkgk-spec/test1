@@ -14,6 +14,11 @@ from app.routers.todos import router as todos_router
 
 def create_app() -> FastAPI:
     application = FastAPI(title="할 일 API")
+
+    @application.get("/health")
+    async def health() -> dict[str, str]:
+        return {"status": "ok"}
+
     application.include_router(auth_router)
     application.include_router(todos_router)
     application.include_router(recommendations_router)

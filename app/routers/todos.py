@@ -1,7 +1,6 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_session
@@ -11,32 +10,21 @@ from app.orm_models import TodoRecord
 from app.services import ai
 from app.services.ai import PrioritySuggestion
 from app.services.auth import get_current_user
+from app.services.todos import (
+    list_user_todos,
+    owned_todo_statement,
+    record_to_todo,
+)
 
 router = APIRouter(prefix="/todos", tags=["todos"])
-
-
-def record_to_todo(record: TodoRecord) -> Todo:
-    return Todo(
-        id=record.id,
-        title=record.title,
-        done=record.done,
-        due=record.due,
-    )
 
 
 # 기존 todo_api import 경로를 위한 호환 별칭.
 row_to_todo = record_to_todo
 
 
-def _owned_todo_statement(todo_id: int, user_id: int):
-    return select(TodoRecord).where(
-        TodoRecord.id == todo_id,
-        TodoRecord.user_id == user_id,
-    )
-
-
 def get_todo(todo_id: int, user_id: int, session: Session) -> Todo:
-    record = session.scalar(_owned_todo_statement(todo_id, user_id))
+    record = session.scalar(owned_todo_statement(todo_id, user_id))
     if record is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -73,12 +61,7 @@ async def list_todos(
     current_user: Annotated[CurrentUser, Depends(get_current_user)],
     session: Annotated[Session, Depends(get_session)],
 ) -> list[Todo]:
-    records = session.scalars(
-        select(TodoRecord)
-        .where(TodoRecord.user_id == current_user.id)
-        .order_by(TodoRecord.id)
-    ).all()
-    return [record_to_todo(record) for record in records]
+    return list_user_todos(current_user.id, session)
 
 
 @router.get("/suggest", response_model=list[PrioritySuggestion])
@@ -86,15 +69,9 @@ async def suggest_todo_priorities(
     current_user: Annotated[CurrentUser, Depends(get_current_user)],
     session: Annotated[Session, Depends(get_session)],
 ) -> list[PrioritySuggestion]:
-    records = session.scalars(
-        select(TodoRecord)
-        .where(
-            TodoRecord.user_id == current_user.id,
-            TodoRecord.done.is_(False),
-        )
-        .order_by(TodoRecord.id)
-    ).all()
-    return ai.suggest_priority([record_to_todo(record) for record in records])
+    return ai.suggest_priority(
+        list_user_todos(current_user.id, session, pending_only=True)
+    )
 
 
 @router.patch("/{todo_id}/toggle", response_model=Todo)
@@ -103,7 +80,7 @@ async def toggle_todo(
     current_user: Annotated[CurrentUser, Depends(get_current_user)],
     session: Annotated[Session, Depends(get_session)],
 ) -> Todo:
-    record = session.scalar(_owned_todo_statement(todo_id, current_user.id))
+    record = session.scalar(owned_todo_statement(todo_id, current_user.id))
     if record is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -120,7 +97,7 @@ async def delete_todo(
     current_user: Annotated[CurrentUser, Depends(get_current_user)],
     session: Annotated[Session, Depends(get_session)],
 ) -> Response:
-    record = session.scalar(_owned_todo_statement(todo_id, current_user.id))
+    record = session.scalar(owned_todo_statement(todo_id, current_user.id))
     if record is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

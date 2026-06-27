@@ -21,9 +21,18 @@ def _sqlite_url(path: str | Path) -> str:
     )
 
 
+def _normalize_database_url(database_url: str) -> str:
+    url = make_url(database_url)
+    if url.drivername == "postgresql":
+        return url.set(drivername="postgresql+psycopg").render_as_string(
+            hide_password=False
+        )
+    return database_url
+
+
 def database_url_from_environment() -> str:
     if database_url := os.getenv("DATABASE_URL"):
-        return database_url
+        return _normalize_database_url(database_url)
     if database_path := os.getenv("TODO_DB_PATH"):
         return _sqlite_url(database_path)
     return _sqlite_url(_DEFAULT_DATABASE_PATH)

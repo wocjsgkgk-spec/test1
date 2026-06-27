@@ -1,14 +1,12 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_session
 from app.models.auth import CurrentUser
 from app.models.recommendation import RecommendationItem, RecommendationResponse
 from app.models.todo import Todo
-from app.orm_models import TodoRecord
 from app.services.ai import (
     AIConfigurationError,
     AIRecommendationError,
@@ -16,23 +14,13 @@ from app.services.ai import (
     get_ai_service,
 )
 from app.services.auth import get_current_user
+from app.services.todos import list_user_todos
 
 router = APIRouter(prefix="/recommendations", tags=["recommendations"])
 
 
 def list_pending_todos(user_id: int, session: Session) -> list[Todo]:
-    records = session.scalars(
-        select(TodoRecord)
-        .where(
-            TodoRecord.user_id == user_id,
-            TodoRecord.done.is_(False),
-        )
-        .order_by(TodoRecord.id)
-    ).all()
-    return [
-        Todo(id=record.id, title=record.title, done=record.done, due=record.due)
-        for record in records
-    ]
+    return list_user_todos(user_id, session, pending_only=True)
 
 
 @router.post("", response_model=RecommendationResponse)
